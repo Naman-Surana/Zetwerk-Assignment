@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Account {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountNumber String        @unique @map("account_number") @db.VarChar(20)
+  holderName    String        @map("holder_name") @db.VarChar(120)
+  email         String        @unique @db.VarChar(160)
+  balance       Decimal       @db.Decimal(19, 4)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at")
+  sentTransfers Transaction[] @relation("SentTransfers")
+  recvTransfers Transaction[] @relation("ReceivedTransfers")
+
+  @@map("accounts")
+}
+
+model Transaction {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  referenceId   String   @unique @map("reference_id") @db.VarChar(64)
+  fromAccountId String   @map("from_account_id") @db.Uuid
+  toAccountId   String   @map("to_account_id") @db.Uuid
+  amount        Decimal  @db.Decimal(19, 4)
+  status        String   @db.VarChar(20)
+  description   String?  @db.VarChar(255)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  fromAccount Account @relation("SentTransfers", fields: [fromAccountId], references: [id])
+  toAccount   Account @relation("ReceivedTransfers", fields: [toAccountId], references: [id])
+
+  @@map("transactions")
+}
