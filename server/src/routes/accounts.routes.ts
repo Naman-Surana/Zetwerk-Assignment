@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { AccountController } from '../controllers/account.controller';
+import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 
-router.post('/', AccountController.create);
-router.get('/', AccountController.list);
-router.get('/:id', AccountController.getOne);
-router.get('/:id/transactions', AccountController.getTransactions);
+router.use(requireAuth);
+
+router.get('/my-account', AccountController.getMyAccount);
+router.get('/my-account/transactions', AccountController.getMyTransactions);
 
 export default router;

@@ -7,8 +7,8 @@ export class TransferController {
     try {
       const data = TransferSchema.parse(req.body);
       const result = await TransferService.transferMoney(
-        data.fromAccountId,
-        data.toAccountId,
+        req.user!.id,
+        data.toAccountNumber,
         data.amount,
         data.description,
         data.idempotencyKey

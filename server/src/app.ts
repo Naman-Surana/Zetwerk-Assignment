@@ -3,6 +3,8 @@ import cors from 'cors';
 import morgan from 'morgan';
 import accountRoutes from './routes/accounts.routes';
 import transferRoutes from './routes/transfers.routes';
+import authRoutes from './routes/auth.routes';
+import adminRoutes from './routes/admin.routes';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -13,6 +15,8 @@ app.use(cors({
 app.use(express.json());
 app.use(morgan('dev'));
 
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/transfers', transferRoutes);
 

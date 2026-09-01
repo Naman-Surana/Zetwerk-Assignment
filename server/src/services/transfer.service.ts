@@ -1,15 +1,12 @@
 import { prisma } from '../db';
 import { Prisma } from '@prisma/client';
-import { BadRequestError, NotFoundError, InsufficientFundsError } from '../utils/errors';
+import { BadRequestError, NotFoundError, InsufficientFundsError, AppError } from '../utils/errors';
 import crypto from 'crypto';
 
 export class TransferService {
-  static async transferMoney(fromId: string, toId: string, amountNum: number, description?: string, idempotencyKey?: string) {
+  static async transferMoney(userId: string, toAccountNumber: string, amountNum: number, description?: string, idempotencyKey?: string) {
     const amount = new Prisma.Decimal(amountNum);
     
-    if (fromId === toId) {
-      throw new BadRequestError('Cannot transfer to the same account', 'SAME_ACCOUNT_TRANSFER');
-    }
     if (amount.lte(0)) {
       throw new BadRequestError('Amount must be greater than zero', 'VALIDATION_ERROR');
     }
@@ -19,9 +16,13 @@ export class TransferService {
     return prisma.$transaction(async (tx) => {
       const existing = await tx.transaction.findUnique({ where: { referenceId: key } });
       if (existing) {
-        // Fetch accounts to return the full payload
         const fromAccount = await tx.account.findUnique({ where: { id: existing.fromAccountId }});
         const toAccount = await tx.account.findUnique({ where: { id: existing.toAccountId }});
+        
+        if (fromAccount?.userId !== userId) {
+          throw new AppError('FORBIDDEN', 'Access denied to this account', 403);
+        }
+
         return {
           transactionId: existing.id,
           status: existing.status,
@@ -32,17 +33,19 @@ export class TransferService {
         };
       }
 
-      const [fromAccount, toAccount] = await Promise.all([
-        tx.account.findUnique({ where: { id: fromId } }),
-        tx.account.findUnique({ where: { id: toId } }),
-      ]);
+      const fromAccount = await tx.account.findUnique({ where: { userId } });
+      const toAccount = await tx.account.findUnique({ where: { accountNumber: toAccountNumber } });
       
       if (!fromAccount || !toAccount) {
         throw new NotFoundError('Account not found');
       }
 
+      if (fromAccount.id === toAccount.id) {
+        throw new BadRequestError('Cannot transfer to the same account', 'SAME_ACCOUNT_TRANSFER');
+      }
+
       const debit = await tx.account.updateMany({
-        where: { id: fromId, balance: { gte: amount } },
+        where: { id: fromAccount.id, balance: { gte: amount } },
         data: { balance: { decrement: amount } },
       });
       
@@ -51,17 +54,17 @@ export class TransferService {
       }
 
       const updatedTo = await tx.account.update({
-        where: { id: toId },
+        where: { id: toAccount.id },
         data: { balance: { increment: amount } },
       });
 
-      const updatedFrom = await tx.account.findUnique({ where: { id: fromId }});
+      const updatedFrom = await tx.account.findUnique({ where: { id: fromAccount.id }});
 
       const transaction = await tx.transaction.create({
         data: {
           referenceId: key,
-          fromAccountId: fromId,
-          toAccountId: toId,
+          fromAccountId: fromAccount.id,
+          toAccountId: toAccount.id,
           amount,
           status: "SUCCESS",
           description: description || null,
