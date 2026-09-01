@@ -6,14 +6,35 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  CLIENT
+  ADMIN
+}
+
+model User {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String    @db.VarChar(120)
+  email     String    @unique @db.VarChar(160)
+  password  String    @db.VarChar(255)
+  role                 Role      @default(CLIENT)
+  resetPasswordToken   String?   @map("reset_password_token") @db.VarChar(255)
+  resetPasswordExpires DateTime? @map("reset_password_expires")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  account              Account?
+
+  @@map("users")
+}
+
 model Account {
   id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String        @unique @map("user_id") @db.Uuid
   accountNumber String        @unique @map("account_number") @db.VarChar(20)
-  holderName    String        @map("holder_name") @db.VarChar(120)
-  email         String        @unique @db.VarChar(160)
   balance       Decimal       @db.Decimal(19, 4)
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at")
+  
+  user          User          @relation(fields: [userId], references: [id])
   sentTransfers Transaction[] @relation("SentTransfers")
   recvTransfers Transaction[] @relation("ReceivedTransfers")
 

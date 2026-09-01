@@ -1,0 +1,150 @@
+import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { prisma } from '../db';
+import { z } from 'zod';
+import { JWT_SECRET } from '../middleware/auth';
+import { AppError } from '../utils/errors';
+import crypto from 'crypto';
+
+const registerSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const loginSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  password: z.string(),
+});
+
+export const register = async (req: Request, res: Response) => {
+  const data = registerSchema.parse(req.body);
+
+  const existingUser = await prisma.user.findUnique({
+    where: { email: data.email }
+  });
+
+  if (existingUser) {
+    throw new AppError('DUPLICATE_ENTRY', 'Email is already registered', 409);
+  }
+
+  const hashedPassword = await bcrypt.hash(data.password, 10);
+
+  const user = await prisma.user.create({
+    data: {
+      name: data.name,
+      email: data.email,
+      password: hashedPassword,
+      role: 'CLIENT',
+      account: {
+        create: {
+          accountNumber: Math.floor(1000000000 + Math.random() * 9000000000).toString(),
+          balance: 1000,
+        }
+      }
+    }
+  });
+
+  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+
+  res.status(201).json({
+    token,
+    user: { id: user.id, name: user.name, email: user.email, role: user.role }
+  });
+};
+
+export const login = async (req: Request, res: Response) => {
+  const data = loginSchema.parse(req.body);
+
+  const user = await prisma.user.findUnique({
+    where: { email: data.email }
+  });
+
+  if (!user) {
+    throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
+  }
+
+  const isValidPassword = await bcrypt.compare(data.password, user.password);
+  
+  if (!isValidPassword) {
+    throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
+  }
+
+  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+
+  res.json({
+    token,
+    user: { id: user.id, name: user.name, email: user.email, role: user.role }
+  });
+};
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email format"),
+});
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  const data = forgotPasswordSchema.parse(req.body);
+
+  const user = await prisma.user.findUnique({ where: { email: data.email } });
+  
+  if (!user) {
+    // Return a success message anyway to prevent email enumeration
+    return res.json({ message: 'If an account with that email exists, a password reset token has been sent.' });
+  }
+
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  
+  const expires = new Date();
+  expires.setHours(expires.getHours() + 1); // 1 hour from now
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: expires
+    }
+  });
+
+  // Simulated email delivery: return the unhashed token in the response for dev mode
+  res.json({ 
+    message: 'If an account with that email exists, a password reset token has been sent.',
+    _dev_token: resetToken 
+  });
+};
+
+const resetPasswordSchema = z.object({
+  token: z.string(),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+export const resetPassword = async (req: Request, res: Response) => {
+  const data = resetPasswordSchema.parse(req.body);
+
+  const hashedToken = crypto.createHash('sha256').update(data.token).digest('hex');
+
+  const user = await prisma.user.findFirst({
+    where: {
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { gt: new Date() } // Must not be expired
+    }
+  });
+
+  if (!user) {
+    throw new AppError('INVALID_TOKEN', 'Password reset token is invalid or has expired', 400);
+  }
+
+  const hashedPassword = await bcrypt.hash(data.newPassword, 10);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      password: hashedPassword,
+      resetPasswordToken: null,
+      resetPasswordExpires: null
+    }
+  });
+
+  res.json({ message: 'Password has been reset successfully. You can now log in.' });
+};

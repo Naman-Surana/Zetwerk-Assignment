@@ -1,56 +1,44 @@
 import { prisma } from '../db';
 import { Prisma } from '@prisma/client';
 import { NotFoundError } from '../utils/errors';
-import crypto from 'crypto';
 
 export class AccountService {
-  static async createAccount(holderName: string, email: string, initialBalance: number) {
-    const accountNumber = 'AC' + crypto.randomInt(10000000, 99999999).toString();
-    
-    return prisma.account.create({
-      data: {
-        holderName,
-        email,
-        accountNumber,
-        balance: new Prisma.Decimal(initialBalance)
-      }
-    });
-  }
-
-  static async getAllAccounts() {
-    return prisma.account.findMany({
-      select: {
-        id: true,
-        accountNumber: true,
-        holderName: true,
-        balance: true
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-  }
-
-  static async getAccountById(id: string) {
+  static async getAccountByUserId(userId: string) {
     const account = await prisma.account.findUnique({
-      where: { id }
+      where: { userId },
+      include: { user: { select: { name: true, email: true } } }
     });
     if (!account) throw new NotFoundError('Account not found');
     return account;
   }
 
-  static async getAccountTransactions(id: string) {
-    // Ensure account exists
-    await this.getAccountById(id);
+  static async getAccountTransactionsByUserId(userId: string, counterpartyUserId?: string) {
+    const account = await this.getAccountByUserId(userId);
+    const id = account.id;
+
+    const whereClause: Prisma.TransactionWhereInput = {
+      OR: [
+        { fromAccountId: id },
+        { toAccountId: id }
+      ]
+    };
+
+    if (counterpartyUserId) {
+      whereClause.AND = [
+        {
+          OR: [
+            { fromAccount: { userId: counterpartyUserId } },
+            { toAccount: { userId: counterpartyUserId } }
+          ]
+        }
+      ];
+    }
 
     const transactions = await prisma.transaction.findMany({
-      where: {
-        OR: [
-          { fromAccountId: id },
-          { toAccountId: id }
-        ]
-      },
+      where: whereClause,
       include: {
-        fromAccount: { select: { accountNumber: true } },
-        toAccount: { select: { accountNumber: true } }
+        fromAccount: { select: { accountNumber: true, user: { select: { name: true } } } },
+        toAccount: { select: { accountNumber: true, user: { select: { name: true } } } }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -61,6 +49,7 @@ export class AccountService {
         id: tx.id,
         direction: isDebit ? 'DEBIT' : 'CREDIT',
         counterpartyAccountNumber: isDebit ? tx.toAccount.accountNumber : tx.fromAccount.accountNumber,
+        counterpartyName: isDebit ? tx.toAccount.user.name : tx.fromAccount.user.name,
         amount: tx.amount,
         description: tx.description,
         status: tx.status,
