@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { JWT_SECRET } from '../middleware/auth';
 import { AppError } from '../utils/errors';
 import crypto from 'crypto';
+import { EmailService } from '../services/email.service';
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -107,10 +108,14 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
   });
 
-  // Simulated email delivery: return the unhashed token in the response for dev mode
+  // Send the actual email
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const resetLink = `${clientUrl}/reset-password?token=${resetToken}`;
+  
+  await EmailService.sendPasswordResetEmail(user.email, resetLink);
+
   res.json({ 
-    message: 'If an account with that email exists, a password reset token has been sent.',
-    _dev_token: resetToken 
+    message: 'If an account with that email exists, a password reset email has been sent.'
   });
 };
 
