@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { forgotPassword } from '../api';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowRight, KeyRound, CheckCircle } from 'lucide-react';
+import { Mail, ArrowRight, KeyRound, CheckCircle, ArrowLeft } from 'lucide-react';
+import { STRINGS } from '../constants/strings';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -36,8 +37,8 @@ export default function ForgotPassword() {
         <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
           <KeyRound size={32} />
         </div>
-        <h1 className="text-3xl font-bold text-slate-800">Forgot Password</h1>
-        <p className="text-slate-500 mt-2">Enter your email and we'll send you a reset link</p>
+        <h1 className="text-3xl font-bold text-slate-800">{STRINGS.FORGOT_PASSWORD.TITLE}</h1>
+        <p className="text-slate-500 mt-2">{STRINGS.FORGOT_PASSWORD.SUBTITLE}</p>
       </div>
 
       <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
@@ -48,19 +49,14 @@ export default function ForgotPassword() {
         )}
 
         {success ? (
-          <div className="text-center space-y-6">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+          <div className="text-center py-6">
+            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle size={32} />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-2">Check your email</h2>
-              <p className="text-slate-500 text-sm">
-                We've sent a password reset link to <strong>{email}</strong>.
-              </p>
-            </div>
+            <p className="text-slate-600 mb-6">{STRINGS.FORGOT_PASSWORD.SUCCESS}</p>
             
             {devToken && (
-              <div className="p-4 bg-slate-50 rounded-xl text-left border border-slate-200">
+              <div className="p-4 bg-slate-50 rounded-xl text-left border border-slate-200 mb-6">
                 <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">Developer Mode</p>
                 <p className="text-sm text-slate-700 mb-3">Since we don't have a real email provider hooked up, use this button to proceed:</p>
                 <Link to={`/reset-password?token=${devToken}`} className="block text-center w-full bg-slate-800 text-white py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition-colors">
@@ -69,14 +65,14 @@ export default function ForgotPassword() {
               </div>
             )}
             
-            <Link to="/login" className="inline-flex items-center text-primary font-medium hover:underline mt-4">
-              <ArrowRight size={16} className="mr-2 rotate-180" /> Back to Login
+            <Link to="/login" className="inline-flex items-center gap-2 text-primary font-medium hover:underline">
+              <ArrowLeft size={16} /> {STRINGS.FORGOT_PASSWORD.BACK_TO_LOGIN}
             </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">{STRINGS.COMMON.EMAIL}</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                   <Mail size={18} />
@@ -95,16 +91,16 @@ export default function ForgotPassword() {
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-xl font-medium hover:bg-primary-dark transition-all disabled:opacity-70 shadow-md hover:shadow-lg mt-4"
+              className="w-full flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-xl font-medium hover:bg-primary-dark transition-all disabled:opacity-70 shadow-md hover:shadow-lg mt-2"
             >
               {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : (
-                <><span>Send Reset Link</span><ArrowRight size={18} /></>
+                <><span>{STRINGS.FORGOT_PASSWORD.SEND_LINK}</span><ArrowRight size={18} /></>
               )}
             </button>
             
-            <div className="text-center mt-6">
-              <Link to="/login" className="text-sm text-slate-500 font-medium hover:text-slate-800 transition-colors">
-                Back to Login
+            <div className="mt-6 text-center">
+              <Link to="/login" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-medium transition-colors">
+                <ArrowLeft size={16} /> {STRINGS.FORGOT_PASSWORD.BACK_TO_LOGIN}
               </Link>
             </div>
           </form>

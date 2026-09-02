@@ -1,5 +1,9 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import app from './app';
-import "dotenv/config";
+import './queues/email.queue'; // Initialize background workers
+import './queues/transfer.queue';
 
 const PORT = process.env.PORT || 4000;
 

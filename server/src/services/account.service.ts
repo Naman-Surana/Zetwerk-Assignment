@@ -12,7 +12,7 @@ export class AccountService {
     return account;
   }
 
-  static async getAccountTransactionsByUserId(userId: string, counterpartyUserId?: string) {
+  static async getAccountTransactionsByUserId(userId: string, counterpartyUserId?: string, page: number = 1, limit: number = 10) {
     const account = await this.getAccountByUserId(userId);
     const id = account.id;
 
@@ -34,16 +34,23 @@ export class AccountService {
       ];
     }
 
-    const transactions = await prisma.transaction.findMany({
-      where: whereClause,
-      include: {
-        fromAccount: { select: { accountNumber: true, user: { select: { name: true } } } },
-        toAccount: { select: { accountNumber: true, user: { select: { name: true } } } }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    const skip = (page - 1) * limit;
 
-    return transactions.map(tx => {
+    const [total, transactions] = await Promise.all([
+      prisma.transaction.count({ where: whereClause }),
+      prisma.transaction.findMany({
+        where: whereClause,
+        include: {
+          fromAccount: { select: { accountNumber: true, user: { select: { name: true } } } },
+          toAccount: { select: { accountNumber: true, user: { select: { name: true } } } }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit
+      })
+    ]);
+
+    const formattedTransactions = transactions.map(tx => {
       const isDebit = tx.fromAccountId === id;
       return {
         id: tx.id,
@@ -56,5 +63,15 @@ export class AccountService {
         createdAt: tx.createdAt
       };
     });
+
+    return {
+      transactions: formattedTransactions,
+      metadata: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 }

@@ -6,14 +6,14 @@ export class TransferController {
   static async transfer(req: Request, res: Response, next: NextFunction) {
     try {
       const data = TransferSchema.parse(req.body);
-      const result = await TransferService.transferMoney(
+      const result = await TransferService.queueTransfer(
         req.user!.id,
         data.toAccountNumber,
         data.amount,
         data.description,
         data.idempotencyKey
       );
-      res.status(201).json(result);
+      res.status(202).json(result);
     } catch (err) {
       next(err);
     }
