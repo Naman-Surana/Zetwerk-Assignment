@@ -13,12 +13,13 @@ import QRCode from 'qrcode';
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email format"),
+  mobileNumber: z.string().min(10, "Mobile number is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   accountNumber: z.string().regex(/^\d{8,17}$/, "Account number must be 8 to 17 digits"),
 });
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email format"),
+  identifier: z.string().min(1, "Email or Account Number is required"),
   password: z.string(),
 });
 
@@ -39,6 +40,7 @@ export const register = async (req: Request, res: Response) => {
     data: {
       name: data.name,
       email: data.email,
+      mobileNumber: data.mobileNumber,
       password: hashedPassword,
       role: 'CLIENT',
       account: {
@@ -61,18 +63,28 @@ export const register = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   const data = loginSchema.parse(req.body);
 
-  const user = await prisma.user.findUnique({
-    where: { email: data.email }
+  let user = await prisma.user.findUnique({
+    where: { email: data.identifier }
   });
 
   if (!user) {
-    throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
+    const account = await prisma.account.findUnique({
+      where: { accountNumber: data.identifier },
+      include: { user: true }
+    });
+    if (account) {
+      user = account.user;
+    }
+  }
+
+  if (!user) {
+    throw new AppError('INVALID_CREDENTIALS', 'Invalid email, account number, or password', 401);
   }
 
   const isValidPassword = await bcrypt.compare(data.password, user.password);
   
   if (!isValidPassword) {
-    throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
+    throw new AppError('INVALID_CREDENTIALS', 'Invalid email, account number, or password', 401);
   }
 
   if (user.mfaEnabled) {

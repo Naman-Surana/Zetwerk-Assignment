@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { login as apiLogin, loginWithMfa } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Lock, Mail, ArrowRight, Key } from 'lucide-react';
+import { Lock, User, ArrowRight, Key } from 'lucide-react';
 import { STRINGS } from '../constants/strings';
 
 export default function Login() {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ identifier: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [mfaRequired, setMfaRequired] = useState(false);
@@ -116,17 +116,17 @@ export default function Login() {
           ) : (
             <>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">{STRINGS.COMMON.EMAIL}</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Email or Account Number</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                    <Mail size={18} />
+                    <User size={18} />
                   </div>
                   <input 
-                    type="email" 
+                    type="text" 
                     required
                     className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                    value={formData.email}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
+                    value={formData.identifier}
+                    onChange={e => setFormData({...formData, identifier: e.target.value})}
                   />
                 </div>
               </div>

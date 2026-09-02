@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { transferMoney } from '../api';
 import { useNavigate } from 'react-router-dom';
-import { Send, ArrowRight, DollarSign, CreditCard } from 'lucide-react';
+import { Send, ArrowRight, DollarSign, CreditCard, Key } from 'lucide-react';
 import { STRINGS } from '../constants/strings';
 
 export default function Transfer() {

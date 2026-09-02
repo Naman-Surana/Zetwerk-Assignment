@@ -80,6 +80,11 @@ export const transferMoney = async (data: { toAccountNumber: string, amount: num
   return res.data;
 };
 
+export const verifyTransferOtp = async (transactionId: string, otp: string) => {
+  const res = await api.post(`/transfers/${transactionId}/verify-otp`, { otp });
+  return res.data;
+};
+
 // --- ADMIN ---
 export const adminGetUsers = async () => {
   const res = await api.get('/admin/users');

@@ -15,6 +15,7 @@ model User {
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String    @db.VarChar(120)
   email     String    @unique @db.VarChar(160)
+  mobileNumber String? @map("mobile_number") @db.VarChar(20)
   password  String    @db.VarChar(255)
   role                 Role      @default(CLIENT)
   resetPasswordToken   String?   @map("reset_password_token") @db.VarChar(255)
@@ -51,6 +52,8 @@ model Transaction {
   amount        Decimal  @db.Decimal(19, 4)
   status        String   @db.VarChar(20)
   description   String?  @db.VarChar(255)
+  otpCode       String?  @map("otp_code") @db.VarChar(6)
+  otpExpiresAt  DateTime? @map("otp_expires_at")
   createdAt     DateTime @default(now()) @map("created_at")
 
   fromAccount Account @relation("SentTransfers", fields: [fromAccountId], references: [id])

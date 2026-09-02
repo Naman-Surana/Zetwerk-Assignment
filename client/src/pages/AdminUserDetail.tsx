@@ -60,7 +60,7 @@ export default function AdminUserDetail() {
             ) : (
               <div className="bg-indigo-500/50 p-4 rounded-2xl border border-indigo-400/30">
                 <p className="text-xs text-indigo-200 font-mono mb-1">{account.accountNumber}</p>
-                <p className="text-2xl font-bold">${parseFloat(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                <p className="text-xl font-bold">${parseFloat(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
               </div>
             )}
           </div>
@@ -68,7 +68,7 @@ export default function AdminUserDetail() {
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-500 mb-1">{STRINGS.ADMIN_USER_DETAIL.ACCOUNT_ID}</p>
-              <p className="text-2xl font-bold text-slate-800 font-mono">#{account?.accountNumber}</p>
+              <p className="text-xl font-bold text-slate-800 font-mono">#{account?.accountNumber}</p>
             </div>
           </div>
           <div className="bg-indigo-600 p-6 rounded-3xl shadow-sm text-white flex items-center justify-between relative overflow-hidden">
@@ -77,7 +77,7 @@ export default function AdminUserDetail() {
             </div>
             <div className="relative z-10">
               <p className="text-indigo-200 text-sm font-medium mb-1">{STRINGS.ADMIN_USER_DETAIL.BALANCE}</p>
-              <p className="text-3xl font-bold">${parseFloat(account?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+              <p className="text-2xl font-bold">${parseFloat(account?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
             </div>
           </div>
         </div>

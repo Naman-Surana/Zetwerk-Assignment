@@ -14,19 +14,42 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      getMyAccount(),
-      getMyTransactions(undefined, currentPage, 10)
-    ]).then(([accData, txData]) => {
-      setAccount(accData);
-      setTransactions(txData.transactions);
-      setMetadata(txData.metadata);
-      setLoading(false);
-    }).catch(err => {
-      console.error(err);
-      setLoading(false);
-    });
+    let isMounted = true;
+    let pollTimer: ReturnType<typeof setTimeout>;
+
+    const fetchData = async (showLoader = false) => {
+      if (showLoader) setLoading(true);
+      try {
+        const [accData, txData] = await Promise.all([
+          getMyAccount(),
+          getMyTransactions(undefined, currentPage, 10)
+        ]);
+        
+        if (!isMounted) return;
+        
+        setAccount(accData);
+        setTransactions(txData.transactions);
+        setMetadata(txData.metadata);
+        
+        if (showLoader) setLoading(false);
+
+        // If any transaction is still pending, poll again in 3 seconds
+        const hasPending = txData.transactions.some((tx: any) => tx.status === 'PENDING');
+        if (hasPending) {
+          pollTimer = setTimeout(() => fetchData(false), 3000);
+        }
+      } catch (err) {
+        console.error(err);
+        if (isMounted && showLoader) setLoading(false);
+      }
+    };
+
+    fetchData(true);
+
+    return () => {
+      isMounted = false;
+      if (pollTimer) clearTimeout(pollTimer);
+    };
   }, [currentPage]);
 
   if (loading) {

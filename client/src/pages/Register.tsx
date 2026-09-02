@@ -6,7 +6,7 @@ import { User, Lock, Mail, ArrowRight, ShieldCheck, CreditCard } from 'lucide-re
 import { STRINGS } from '../constants/strings';
 
 export default function Register() {
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', accountNumber: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', mobileNumber: '', password: '', accountNumber: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -100,6 +100,23 @@ export default function Register() {
                     className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                     value={formData.email}
                     onChange={e => setFormData({...formData, email: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Mobile Number</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                    <span className="font-semibold text-xs">#</span>
+                  </div>
+                  <input 
+                    type="tel" 
+                    required
+                    placeholder="e.g. 555-123-4567"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                    value={formData.mobileNumber}
+                    onChange={e => setFormData({...formData, mobileNumber: e.target.value})}
                   />
                 </div>
               </div>

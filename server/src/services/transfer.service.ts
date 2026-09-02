@@ -2,6 +2,7 @@ import { prisma } from '../db';
 import { Prisma } from '@prisma/client';
 import { BadRequestError, NotFoundError, InsufficientFundsError, AppError } from '../utils/errors';
 import crypto from 'crypto';
+import { transferQueue } from '../queues/transfer.queue';
 
 export class TransferService {
   static async queueTransfer(userId: string, toAccountNumber: string, amountNum: number, description?: string, idempotencyKey?: string) {
@@ -48,26 +49,73 @@ export class TransferService {
         toAccountId: toAccount.id,
         amount,
         status: "PENDING",
-        description: description || null,
-      },
+        description: description || null
+      }
     });
 
-    // Enqueue job for background processing
-    const { enqueueTransfer } = await import('../queues/transfer.queue');
-    await enqueueTransfer({
+    // Queue the transfer for background processing
+    await transferQueue?.add('processTransfer', {
       userId,
+      fromAccountNumber: fromAccount.accountNumber,
       toAccountNumber,
       amountNum,
-      description,
-      idempotencyKey: key,
+      description: transaction.description || undefined,
+      idempotencyKey: transaction.referenceId,
       transactionId: transaction.id
     });
 
     return {
       transactionId: transaction.id,
-      status: transaction.status,
-      amount: transaction.amount,
-      createdAt: transaction.createdAt,
+      status: 'PENDING',
+      message: 'Transfer is processing in the background.'
+    };
+  }
+
+  static async verifyOtpAndQueueTransfer(transactionId: string, userId: string, otp: string) {
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+      include: { fromAccount: true }
+    });
+
+    if (!transaction) throw new NotFoundError('Transaction not found');
+    if (transaction.fromAccount.userId !== userId) throw new BadRequestError('Unauthorized', 'UNAUTHORIZED');
+    if (transaction.status !== 'PENDING_OTP') throw new BadRequestError('Transaction is not pending OTP', 'INVALID_STATE');
+    
+    if (transaction.otpExpiresAt && transaction.otpExpiresAt < new Date()) {
+      await prisma.transaction.update({
+        where: { id: transactionId },
+        data: { status: 'FAILED' }
+      });
+      throw new BadRequestError('OTP has expired', 'OTP_EXPIRED');
+    }
+
+    if (transaction.otpCode !== otp) {
+      throw new BadRequestError('Invalid OTP', 'INVALID_OTP');
+    }
+
+    // OTP is valid, mark as PENDING and queue it
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: {
+        status: 'PENDING',
+        otpCode: null,
+        otpExpiresAt: null
+      }
+    });
+
+    const { enqueueTransfer } = await import('../queues/transfer.queue');
+    await enqueueTransfer({
+      userId,
+      toAccountNumber: (await prisma.account.findUnique({ where: { id: transaction.toAccountId } }))!.accountNumber,
+      amountNum: Number(transaction.amount),
+      description: transaction.description || undefined,
+      idempotencyKey: transaction.referenceId,
+      transactionId: transaction.id
+    });
+
+    return {
+      transactionId: transaction.id,
+      status: 'PENDING',
       message: 'Transfer is processing in the background.'
     };
   }

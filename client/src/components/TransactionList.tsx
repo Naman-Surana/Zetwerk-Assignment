@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, XCircle } from 'lucide-react';
 import { STRINGS } from '../constants/strings';
 
 interface TransactionListProps {
@@ -29,10 +29,10 @@ export default function TransactionList({ transactions, metadata, setCurrentPage
             <div key={tx.id} className="p-4 md:p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
               <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
                 <div className={clsx(
-                  "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center shadow-sm shrink-0",
-                  isDebit ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-600"
+                  "w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm",
+                  tx.status === 'FAILED' ? "bg-rose-100 text-rose-500" : (isDebit ? "bg-slate-100 text-slate-600" : "bg-emerald-100 text-emerald-600")
                 )}>
-                  {isDebit ? <ArrowUpRight size={20} className="md:w-6 md:h-6" /> : <ArrowDownLeft size={20} className="md:w-6 md:h-6" />}
+                  {tx.status === 'FAILED' ? <XCircle size={20} className="md:w-6 md:h-6" /> : (isDebit ? <ArrowUpRight size={20} className="md:w-6 md:h-6" /> : <ArrowDownLeft size={20} className="md:w-6 md:h-6" />)}
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-slate-800 truncate text-sm md:text-base">
@@ -53,11 +53,14 @@ export default function TransactionList({ transactions, metadata, setCurrentPage
               <div className="text-right shrink-0 ml-2">
                 <p className={clsx(
                   "font-bold text-base md:text-lg",
-                  isDebit ? "text-slate-800" : "text-emerald-600"
+                  tx.status === 'FAILED' ? "text-slate-400 line-through" : (isDebit ? "text-slate-800" : "text-emerald-600")
                 )}>
                   {isDebit ? '-' : '+'}${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </p>
-                <span className="inline-block px-2 py-0.5 md:py-1 bg-slate-100 text-slate-500 text-[10px] md:text-xs rounded-md mt-1 font-medium">
+                <span className={clsx(
+                  "inline-block px-2 py-0.5 md:py-1 text-[10px] md:text-xs rounded-md mt-1 font-medium",
+                  tx.status === 'FAILED' ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-500"
+                )}>
                   {tx.status}
                 </span>
               </div>
