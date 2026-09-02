@@ -23,8 +23,12 @@
       "destination": "/client/assets/$1"
     },
     {
-      "source": "/(.*\\.(svg|png|ico|jpg|jpeg))",
-      "destination": "/client/$1"
+      "source": "/favicon.svg",
+      "destination": "/client/favicon.svg"
+    },
+    {
+      "source": "/icons.svg",
+      "destination": "/client/icons.svg"
     },
     {
       "source": "/(.*)",
