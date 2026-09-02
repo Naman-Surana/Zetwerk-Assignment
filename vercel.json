@@ -19,6 +19,14 @@
       "destination": "/server/api/index.ts"
     },
     {
+      "source": "/assets/(.*)",
+      "destination": "/client/assets/$1"
+    },
+    {
+      "source": "/(.*\\.(svg|png|ico|jpg|jpeg))",
+      "destination": "/client/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/client/index.html"
     }
