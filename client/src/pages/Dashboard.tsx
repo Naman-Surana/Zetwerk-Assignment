@@ -3,6 +3,7 @@ import { getMyAccount, getMyTransactions } from '../api';
 import { Clock } from 'lucide-react';
 import AccountCard from '../components/AccountCard';
 import TransactionList from '../components/TransactionList';
+import MfaSettings from '../components/MfaSettings';
 import { STRINGS } from '../constants/strings';
 
 export default function Dashboard() {
@@ -50,23 +51,24 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-start">
         <div className="lg:col-span-1 space-y-6">
           <AccountCard 
             balance={account.balance} 
             accountNumber={account.accountNumber} 
           />
+          <MfaSettings />
         </div>
 
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full max-h-[800px]">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
                 <Clock size={18} className="text-primary" /> {STRINGS.DASHBOARD.RECENT_TRANSACTIONS}
               </h3>
             </div>
             
-            <div className="p-0 flex-1">
+            <div className="p-0 flex-1 overflow-y-auto">
               <TransactionList 
                 transactions={transactions}
                 metadata={metadata}

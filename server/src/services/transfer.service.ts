@@ -133,9 +133,13 @@ export class TransferService {
              });
              return transaction;
           }
-        }, { isolationLevel: "Serializable" });
+         }, { 
+           isolationLevel: "Serializable",
+           maxWait: 10000,
+           timeout: 20000
+         });
       } catch (error: any) {
-        if (error.code === 'P2034' || error.code === '40001' || error.message.includes('deadlock') || error.message.includes('Serialization failure')) {
+        if (error.code === 'P2034' || error.code === 'P2028' || error.code === '40001' || error.message.includes('deadlock') || error.message.includes('Serialization failure')) {
           if (attempt === maxRetries) {
             throw new AppError('SERVICE_UNAVAILABLE', 'Server is too busy processing transactions. Please try again in a few moments.', 503);
           }

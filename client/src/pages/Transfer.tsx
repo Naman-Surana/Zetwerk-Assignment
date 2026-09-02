@@ -140,6 +140,7 @@ export default function Transfer() {
                     : 'border-slate-200 focus:ring-primary/20 focus:border-primary'
                 }`}
                 value={formData.amount}
+                onWheel={e => (e.target as HTMLInputElement).blur()}
                 onChange={e => {
                   setFormData({...formData, amount: e.target.value});
                   if (fieldErrors.amount) setFieldErrors({...fieldErrors, amount: ''});

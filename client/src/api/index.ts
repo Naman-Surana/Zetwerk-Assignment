@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:4000/api'),
-  timeout: 5000,
+  timeout: 15000,
 });
 
 api.interceptors.request.use((config) => {
@@ -43,6 +43,21 @@ export const forgotPassword = async (data: { email: string }) => {
 
 export const resetPassword = async (data: { token: string, newPassword: string }) => {
   const res = await api.post('/auth/reset-password', data);
+  return res.data;
+};
+
+export const loginWithMfa = async (data: { tempToken: string, code: string }) => {
+  const res = await api.post('/auth/login/mfa', data);
+  return res.data;
+};
+
+export const setupMfa = async () => {
+  const res = await api.get('/auth/mfa/setup');
+  return res.data;
+};
+
+export const verifyMfaSetup = async (data: { code: string }) => {
+  const res = await api.post('/auth/mfa/verify', data);
   return res.data;
 };
 

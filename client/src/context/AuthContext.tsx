@@ -6,6 +6,7 @@ export interface User {
   name: string;
   email: string;
   role: 'CLIENT' | 'ADMIN';
+  mfaEnabled?: boolean;
 }
 
 interface AuthContextType {

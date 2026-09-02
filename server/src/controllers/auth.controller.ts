@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db';
 import { z } from 'zod';
@@ -7,6 +7,8 @@ import { JWT_SECRET } from '../middleware/auth';
 import { AppError } from '../utils/errors';
 import crypto from 'crypto';
 import { enqueuePasswordResetEmail } from '../queues/email.queue';
+import speakeasy from 'speakeasy';
+import QRCode from 'qrcode';
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -52,7 +54,7 @@ export const register = async (req: Request, res: Response) => {
 
   res.status(201).json({
     token,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role }
+    user: { id: user.id, name: user.name, email: user.email, role: user.role, mfaEnabled: user.mfaEnabled }
   });
 };
 
@@ -73,11 +75,16 @@ export const login = async (req: Request, res: Response) => {
     throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
   }
 
+  if (user.mfaEnabled) {
+    const tempToken = jwt.sign({ id: user.id, isMfaPending: true }, JWT_SECRET, { expiresIn: '2m' });
+    return res.json({ mfaRequired: true, tempToken });
+  }
+
   const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
 
   res.json({
     token,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role }
+    user: { id: user.id, name: user.name, email: user.email, role: user.role, mfaEnabled: user.mfaEnabled }
   });
 };
 
@@ -153,4 +160,82 @@ export const resetPassword = async (req: Request, res: Response) => {
   });
 
   res.json({ message: 'Password has been reset successfully. You can now log in.' });
+};
+
+export const setupMfa = async (req: Request, res: Response) => {
+  const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+  if (!user) throw new AppError('NOT_FOUND', 'User not found', 404);
+
+  const secret = speakeasy.generateSecret({ name: `Horizon Bank (${user.email})` });
+  
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { mfaSecret: secret.base32 }
+  });
+
+  if (!secret.otpauth_url) {
+    throw new AppError('INTERNAL_ERROR', 'Failed to generate MFA URL', 500);
+  }
+  
+  const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
+
+  res.json({ secret: secret.base32, qrCodeUrl });
+};
+
+export const verifyMfaSetup = async (req: Request, res: Response) => {
+  const { code } = req.body;
+  
+  const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+  if (!user || !user.mfaSecret) throw new AppError('BAD_REQUEST', 'MFA setup not initialized', 400);
+
+  const isValid = speakeasy.totp.verify({
+    secret: user.mfaSecret,
+    encoding: 'base32',
+    token: code,
+    window: 1
+  });
+  
+  if (!isValid) {
+    throw new AppError('INVALID_CODE', 'The MFA code is invalid', 400);
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { mfaEnabled: true }
+  });
+
+  res.json({ message: 'MFA successfully enabled' });
+};
+
+export const loginWithMfa = async (req: Request, res: Response) => {
+  const { tempToken, code } = req.body;
+
+  try {
+    const decoded: any = jwt.verify(tempToken, JWT_SECRET);
+    if (!decoded.isMfaPending) throw new Error();
+
+    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    if (!user || !user.mfaEnabled || !user.mfaSecret) throw new Error();
+
+    const isValid = speakeasy.totp.verify({
+      secret: user.mfaSecret,
+      encoding: 'base32',
+      token: code,
+      window: 1
+    });
+    
+    if (!isValid) {
+      throw new AppError('INVALID_CODE', 'Invalid MFA code', 401);
+    }
+
+    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+
+    res.json({
+      token,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, mfaEnabled: user.mfaEnabled }
+    });
+  } catch (err: any) {
+    if (err instanceof AppError) throw err;
+    throw new AppError('UNAUTHORIZED', 'Invalid session or token', 401);
+  }
 };
