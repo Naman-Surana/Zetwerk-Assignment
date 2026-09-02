@@ -4,7 +4,7 @@ import { TransferService } from '../services/transfer.service';
 import { prisma } from '../db';
 
 const connection = process.env.REDIS_URL 
-  ? new IORedis(process.env.REDIS_URL, { maxRetriesPerRequest: null }) 
+  ? new IORedis(process.env.REDIS_URL, { maxRetriesPerRequest: null, family: 4 }) 
   : null;
 
 export const transferQueue = connection 

@@ -6,7 +6,7 @@ import IORedis from 'ioredis';
 // If REDIS_URL is not provided (e.g. before the user pastes it), we don't start the queue 
 // to prevent connection crash loops.
 const connection = process.env.REDIS_URL 
-  ? new IORedis(process.env.REDIS_URL, { maxRetriesPerRequest: null }) 
+  ? new IORedis(process.env.REDIS_URL, { maxRetriesPerRequest: null, family: 4 }) 
   : null;
 
 if (connection) {
