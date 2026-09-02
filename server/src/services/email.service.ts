@@ -38,7 +38,7 @@ export class EmailService {
     const transporter = await this.getTransporter();
     
     const mailOptions = {
-      from: `"Horizon Bank Support" <${process.env.SMTP_USER || 'surana.naman2004@gmail.com'}>`,
+      from: `"Horizon Bank Support" <${process.env.SMTP_USER ?? ''}>`,
       to: toEmail,
       subject: 'Password Reset Request',
       html: `

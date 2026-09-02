@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { adminGetUsers } from '../api';
 import { Link } from 'react-router-dom';
 import { Users, Shield, ArrowRight, User } from 'lucide-react';
+import { STRINGS } from '../constants/strings';
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState<any[]>([]);
@@ -25,9 +26,9 @@ export default function AdminDashboard() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Shield size={24} className="text-indigo-500" />
-            <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Admin Console</h1>
+            <h1 className="text-3xl font-bold text-slate-800 tracking-tight">{STRINGS.ADMIN_DASHBOARD.TITLE}</h1>
           </div>
-          <p className="text-slate-500">Manage users and oversee all banking operations.</p>
+          <p className="text-slate-500">{STRINGS.ADMIN_DASHBOARD.SUBTITLE}</p>
         </div>
       </div>
 
@@ -37,27 +38,27 @@ export default function AdminDashboard() {
             <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
               <Users size={20} />
             </div>
-            <h2 className="text-xl font-bold text-slate-800">Platform Users</h2>
+            <h2 className="text-xl font-bold text-slate-800">{STRINGS.ADMIN_DASHBOARD.PLATFORM_USERS}</h2>
           </div>
           <div className="bg-slate-100 text-slate-600 text-sm font-medium px-3 py-1 rounded-full">
-            {users.length} Total
+            {users.length} {STRINGS.ADMIN_DASHBOARD.TOTAL}
           </div>
         </div>
         
         {users.length === 0 ? (
           <div className="p-12 text-center text-slate-500">
-            No users registered yet.
+            {STRINGS.ADMIN_DASHBOARD.NO_USERS}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                  <th className="p-4 font-medium">Name</th>
-                  <th className="p-4 font-medium">Email</th>
-                  <th className="p-4 font-medium">Role</th>
-                  <th className="p-4 font-medium">Joined</th>
-                  <th className="p-4 font-medium text-right">Actions</th>
+                  <th className="p-4 font-medium">{STRINGS.ADMIN_DASHBOARD.COL_NAME}</th>
+                  <th className="p-4 font-medium">{STRINGS.ADMIN_DASHBOARD.COL_EMAIL}</th>
+                  <th className="p-4 font-medium">{STRINGS.ADMIN_DASHBOARD.COL_ROLE}</th>
+                  <th className="p-4 font-medium">{STRINGS.ADMIN_DASHBOARD.COL_JOINED}</th>
+                  <th className="p-4 font-medium text-right">{STRINGS.ADMIN_DASHBOARD.COL_ACTIONS}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -85,7 +86,7 @@ export default function AdminDashboard() {
                     <td className="p-4 text-right">
                       {u.role === 'CLIENT' && (
                         <Link to={`/admin/user/${u.id}`} className="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
-                          View Details <ArrowRight size={14} className="ml-1" />
+                          {STRINGS.ADMIN_DASHBOARD.VIEW_DETAILS} <ArrowRight size={14} className="ml-1" />
                         </Link>
                       )}
                     </td>

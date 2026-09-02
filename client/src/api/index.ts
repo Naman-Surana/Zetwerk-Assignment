@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:4000/api'),
+  timeout: 5000,
 });
 
 api.interceptors.request.use((config) => {
@@ -11,6 +12,18 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ECONNABORTED') {
+      window.dispatchEvent(new CustomEvent('api-network-error', { detail: { type: 'timeout' } }));
+    } else if (error.message === 'Network Error' || !error.response) {
+      window.dispatchEvent(new CustomEvent('api-network-error', { detail: { type: 'network_error' } }));
+    }
+    return Promise.reject(error);
+  }
+);
 
 // --- AUTH ---
 export const login = async (data: any) => {
@@ -39,8 +52,10 @@ export const getMyAccount = async () => {
   return res.data;
 };
 
-export const getMyTransactions = async (counterpartyId?: string) => {
-  const url = counterpartyId ? `/accounts/my-account/transactions?counterpartyId=${counterpartyId}` : `/accounts/my-account/transactions`;
+export const getMyTransactions = async (counterpartyId?: string, page: number = 1, limit: number = 10) => {
+  const url = counterpartyId 
+    ? `/accounts/my-account/transactions?counterpartyId=${counterpartyId}&page=${page}&limit=${limit}` 
+    : `/accounts/my-account/transactions?page=${page}&limit=${limit}`;
   const res = await api.get(url);
   return res.data;
 };
@@ -61,7 +76,7 @@ export const adminGetUserAccount = async (userId: string) => {
   return res.data;
 };
 
-export const adminGetUserTransactions = async (userId: string) => {
-  const res = await api.get(`/admin/users/${userId}/transactions`);
+export const adminGetUserTransactions = async (userId: string, page: number = 1, limit: number = 10) => {
+  const res = await api.get(`/admin/users/${userId}/transactions?page=${page}&limit=${limit}`);
   return res.data;
 };

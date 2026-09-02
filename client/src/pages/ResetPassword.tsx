@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { resetPassword } from '../api';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Lock, ArrowRight, ShieldCheck, CheckCircle } from 'lucide-react';
+import { Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { STRINGS } from '../constants/strings';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -16,7 +17,7 @@ export default function ResetPassword() {
 
   useEffect(() => {
     if (!token) {
-      setError("Invalid or missing reset token.");
+      setError(STRINGS.RESET_PASSWORD.INVALID_TOKEN);
     }
   }, [token]);
 
@@ -25,11 +26,11 @@ export default function ResetPassword() {
     if (!token) return;
     
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError(STRINGS.RESET_PASSWORD.PASSWORDS_MISMATCH);
       return;
     }
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError(STRINGS.RESET_PASSWORD.PASSWORD_TOO_SHORT);
       return;
     }
 
@@ -40,7 +41,7 @@ export default function ResetPassword() {
       await resetPassword({ token, newPassword: password });
       setSuccess(true);
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to reset password. The token may be expired.');
+      setError(err.response?.data?.error?.message || STRINGS.RESET_PASSWORD.RESET_FAILED);
     } finally {
       setLoading(false);
     }
@@ -51,14 +52,14 @@ export default function ResetPassword() {
       <div className="max-w-md mx-auto mt-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
          <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm text-center">
             <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle size={32} />
+              <ShieldCheck size={32} />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Password Reset!</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">{STRINGS.RESET_PASSWORD.SUCCESS_TITLE}</h2>
             <p className="text-slate-500 mb-8">
-              Your password has been changed successfully. You can now log in with your new password.
+              {STRINGS.RESET_PASSWORD.SUCCESS_DESC}
             </p>
             <Link to="/login" className="flex items-center justify-center gap-2 w-full bg-primary text-white py-3.5 rounded-xl font-medium hover:bg-primary-dark transition-all shadow-md">
-              <span>Go to Login</span>
+              <span>{STRINGS.RESET_PASSWORD.BACK_TO_LOGIN}</span>
             </Link>
          </div>
       </div>
@@ -68,11 +69,8 @@ export default function ResetPassword() {
   return (
     <div className="max-w-md mx-auto mt-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
-          <ShieldCheck size={32} />
-        </div>
-        <h1 className="text-3xl font-bold text-slate-800">Set New Password</h1>
-        <p className="text-slate-500 mt-2">Enter your new secure password below</p>
+        <h1 className="text-3xl font-bold text-slate-800">{STRINGS.RESET_PASSWORD.TITLE}</h1>
+        <p className="text-slate-500 mt-2">{STRINGS.RESET_PASSWORD.SUBTITLE}</p>
       </div>
 
       <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
@@ -84,7 +82,7 @@ export default function ResetPassword() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">New Password</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">{STRINGS.RESET_PASSWORD.NEW_PASSWORD}</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                 <Lock size={18} />
@@ -101,7 +99,7 @@ export default function ResetPassword() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Confirm Password</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">{STRINGS.RESET_PASSWORD.CONFIRM_PASSWORD}</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                 <Lock size={18} />
@@ -123,7 +121,7 @@ export default function ResetPassword() {
             className="w-full flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-xl font-medium hover:bg-primary-dark transition-all disabled:opacity-70 shadow-md hover:shadow-lg mt-4"
           >
             {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : (
-              <><span>Reset Password</span><ArrowRight size={18} /></>
+              <><span>{STRINGS.RESET_PASSWORD.RESET_BTN}</span><ArrowRight size={18} /></>
             )}
           </button>
         </form>

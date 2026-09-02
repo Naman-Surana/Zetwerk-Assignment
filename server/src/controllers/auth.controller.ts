@@ -6,12 +6,13 @@ import { z } from 'zod';
 import { JWT_SECRET } from '../middleware/auth';
 import { AppError } from '../utils/errors';
 import crypto from 'crypto';
-import { EmailService } from '../services/email.service';
+import { enqueuePasswordResetEmail } from '../queues/email.queue';
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email format"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  accountNumber: z.string().regex(/^\d{8,17}$/, "Account number must be 8 to 17 digits"),
 });
 
 const loginSchema = z.object({
@@ -40,7 +41,7 @@ export const register = async (req: Request, res: Response) => {
       role: 'CLIENT',
       account: {
         create: {
-          accountNumber: Math.floor(1000000000 + Math.random() * 9000000000).toString(),
+          accountNumber: data.accountNumber,
           balance: 1000,
         }
       }
@@ -94,7 +95,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     return res.json({ message: 'If an account with that email exists, a password reset token has been sent.' });
   }
 
-  const resetToken = crypto.randomBytes(32).toString('hex');
+  const resetToken = crypto.randomUUID();
   const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
   
   const expires = new Date();
@@ -108,11 +109,11 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
   });
 
-  // Send the actual email
+  // Send the email via Redis queue (falls back to synchronous if no REDIS_URL)
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
   const resetLink = `${clientUrl}/reset-password?token=${resetToken}`;
   
-  await EmailService.sendPasswordResetEmail(user.email, resetLink);
+  await enqueuePasswordResetEmail(user.email, resetLink);
 
   res.json({ 
     message: 'If an account with that email exists, a password reset email has been sent.'
